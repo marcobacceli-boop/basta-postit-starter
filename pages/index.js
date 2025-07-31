@@ -21,7 +21,7 @@ export default function Home() {
     capacity: 4,
   });
 
-  const adminEmail = 'marco.bacceli@gmail.com'; // 🔒 ← sostituiscilo con il tuo!
+  const adminEmail = 'marco.bacceli@gmail.com'; // Cambia con il tuo se necessario
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -45,18 +45,26 @@ export default function Home() {
 
   async function handleJoin(id) {
     if (!name) return;
+
     const { data: row } = await supabase
       .from('tables')
       .select('participants')
       .eq('id', id)
       .single();
 
+    // Evita doppie iscrizioni
+    if (row?.participants?.includes(name)) return;
+
     const updated = [...(row?.participants || []), name];
 
-    await supabase
+    const { error } = await supabase
       .from('tables')
       .update({ participants: updated })
       .eq('id', id);
+
+    if (error) {
+      console.error('Errore durante la partecipazione:', error);
+    }
 
     loadTables();
   }
@@ -164,7 +172,11 @@ export default function Home() {
           <div>Posti: {t.participants?.length ?? 0} / {t.capacity}</div>
           <button
             onClick={() => handleJoin(t.id)}
-            disabled={!name || t.participants?.length >= t.capacity}
+            disabled={
+              !name ||
+              t.participants?.length >= t.capacity ||
+              t.participants?.includes(name)
+            }
             className="mt-1 px-2 py-1 bg-green-600 text-white rounded disabled:opacity-50"
           >
             Partecipa
