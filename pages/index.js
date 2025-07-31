@@ -21,7 +21,7 @@ export default function Home() {
     capacity: 4,
   });
 
-  const adminEmail = 'marco.bacceli@gmail.com'; // Cambia con il tuo se necessario
+  const adminEmail = 'marco.bacceli@gmail.com'; // ← Cambia con il tuo se serve
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -40,33 +40,53 @@ export default function Home() {
       .from('tables')
       .select('*')
       .order('date', { ascending: true });
-    if (!error) setTables(data);
+    if (!error) {
+      setTables(data);
+      console.log('✅ Eventi caricati:', data);
+    } else {
+      console.error('❌ Errore caricamento eventi:', error);
+    }
   }
 
   async function handleJoin(id) {
     if (!name) return;
 
-    const { data: row } = await supabase
+    console.log('🔄 Partecipa cliccato con nome:', name, 'per evento ID:', id);
+
+    const { data: row, error: fetchError } = await supabase
       .from('tables')
       .select('participants')
       .eq('id', id)
       .single();
 
-    // Evita doppie iscrizioni
-    if (row?.participants?.includes(name)) return;
+    if (fetchError) {
+      console.error('❌ Errore nel recupero dati:', fetchError);
+      return;
+    }
 
-    const updated = [...(row?.participants || []), name];
+    console.log('📦 Partecipanti attuali:', row);
 
-    const { error } = await supabase
+    const current = row?.participants || [];
+
+    // Evita di aggiungere lo stesso nome due volte
+    if (current.includes(name)) {
+      console.warn('⚠️ Nome già presente tra i partecipanti');
+      return;
+    }
+
+    const updated = [...current, name];
+
+    const { error: updateError } = await supabase
       .from('tables')
       .update({ participants: updated })
       .eq('id', id);
 
-    if (error) {
-      console.error('Errore durante la partecipazione:', error);
+    if (updateError) {
+      console.error('❌ Errore nell’aggiornamento:', updateError);
+    } else {
+      console.log('✅ Partecipazione aggiornata con:', updated);
+      loadTables();
     }
-
-    loadTables();
   }
 
   async function createTable() {
@@ -172,11 +192,7 @@ export default function Home() {
           <div>Posti: {t.participants?.length ?? 0} / {t.capacity}</div>
           <button
             onClick={() => handleJoin(t.id)}
-            disabled={
-              !name ||
-              t.participants?.length >= t.capacity ||
-              t.participants?.includes(name)
-            }
+            disabled={!name || t.participants?.length >= t.capacity}
             className="mt-1 px-2 py-1 bg-green-600 text-white rounded disabled:opacity-50"
           >
             Partecipa
