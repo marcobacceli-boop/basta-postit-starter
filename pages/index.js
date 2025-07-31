@@ -21,7 +21,7 @@ export default function Home() {
     capacity: 4,
   });
 
-  const adminEmail = 'tuo@email.it'; // 🔒 ← sostituiscilo con il tuo!
+  const adminEmail = 'marco.bacceli@gmail.com'; // 🔒 ← sostituiscilo con il tuo!
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
